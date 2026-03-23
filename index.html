@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Research Agent</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f0f13; color: #e2e2e8; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; }
+    header { text-align: center; margin-bottom: 48px; }
+    header h1 { font-size: 2.2rem; font-weight: 700; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+    header p { color: #71717a; font-size: 1rem; }
+    .search-box { width: 100%; max-width: 680px; display: flex; gap: 12px; margin-bottom: 40px; }
+    .search-box input { flex: 1; padding: 14px 20px; border-radius: 12px; border: 1px solid #2e2e3a; background: #18181f; color: #e2e2e8; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+    .search-box input:focus { border-color: #7c3aed; }
+    .search-box input::placeholder { color: #52525b; }
+    .search-box button { padding: 14px 28px; border-radius: 12px; border: none; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+    .search-box button:hover { opacity: 0.88; }
+    .search-box button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #status { display: none; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #2e2e3a; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .agent-steps { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .step { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; border: 1px solid #2e2e3a; background: #18181f; color: #52525b; transition: all 0.4s; }
+    .step.active { border-color: #7c3aed; color: #a78bfa; background: #1e1230; }
+    .step.done { border-color: #16a34a; color: #4ade80; background: #0c1a10; }
+    #result-card { display: none; width: 100%; max-width: 780px; background: #18181f; border: 1px solid #2e2e3a; border-radius: 16px; padding: 40px 48px; animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    #result-card .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid #2e2e3a; }
+    .topic-label { font-size: 0.8rem; color: #a78bfa; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .word-count { font-size: 0.78rem; color: #52525b; }
+    #content h1 { font-size: 1.6rem; font-weight: 700; color: #f4f4f8; margin-bottom: 16px; line-height: 1.3; }
+    #content h2 { font-size: 1.15rem; font-weight: 600; color: #c4b5fd; margin: 28px 0 10px; }
+    #content p { color: #b4b4be; line-height: 1.8; margin-bottom: 14px; font-size: 0.97rem; }
+    #content strong { color: #e2e2e8; }
+    #content ul, #content ol { color: #b4b4be; line-height: 1.8; padding-left: 20px; margin-bottom: 14px; font-size: 0.97rem; }
+    .copy-btn { margin-top: 28px; padding: 10px 22px; border-radius: 8px; border: 1px solid #2e2e3a; background: transparent; color: #71717a; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+    .copy-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+    #error-msg { display: none; color: #f87171; background: #1c0a0a; border: 1px solid #7f1d1d; border-radius: 10px; padding: 14px 20px; font-size: 0.9rem; max-width: 680px; width: 100%; text-align: center; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI Research Agent</h1>
+  <p>Gib ein Thema ein &ndash; 3 Agents recherchieren, schreiben und verbessern den Text.</p>
+</header>
+<div class="search-box">
+  <input type="text" id="topic-input" placeholder="z.B. Quantencomputer, Klimawandel, CRISPR ..." autofocus/>
+  <button id="search-btn" onclick="startResearch()">Recherchieren</button>
+</div>
+<div id="status">
+  <div class="spinner"></div>
+  <div class="agent-steps">
+    <div class="step" id="step-1">Researcher</div>
+    <div class="step" id="step-2">Writer</div>
+    <div class="step" id="step-3">Reviewer</div>
+  </div>
+  <p style="font-size:0.85rem;color:#52525b;" id="status-text">Agents werden gestartet...</p>
+</div>
+<div id="error-msg"></div>
+<div id="result-card">
+  <div class="meta">
+    <span class="topic-label" id="result-topic"></span>
+    <span class="word-count" id="result-wordcount"></span>
+  </div>
+  <div id="content"></div>
+  <button class="copy-btn" onclick="copyText()">Text kopieren</button>
+</div>
+<script>
+  const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8000/run-agents"
+    : "https://DEIN-BACKEND-URL.onrender.com/run-agents";
+  document.getElementById("topic-input").addEventListener("keydown", e => { if (e.key === "Enter") startResearch(); });
+  async function startResearch() {
+    const topic = document.getElementById("topic-input").value.trim();
+    if (!topic) { showError("Bitte gib ein Thema ein."); return; }
+    setLoading(true); hideError(); hideResult(); animateSteps();
+    try {
+      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic }) });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || "Fehler"); }
+      const data = await res.json();
+      showResult(data.topic, data.result);
+    } catch(e) { showError("Fehler: " + e.message); }
+    finally { setLoading(false); }
+  }
+  function animateSteps() {
+    const steps = ["step-1","step-2","step-3"];
+    const labels = ["Researcher recherchiert...","Writer schreibt...","Reviewer prueft..."];
+    steps.forEach(id => document.getElementById(id).className = "step");
+    let i = 0;
+    const iv = setInterval(() => {
+      if (i > 0) document.getElementById(steps[i-1]).className = "step done";
+      if (i < steps.length) { document.getElementById(steps[i]).className = "step active"; document.getElementById("status-text").textContent = labels[i]; i++; }
+      else clearInterval(iv);
+    }, 5000);
+    window._iv = iv;
+  }
+  function setLoading(on) {
+    document.getElementById("status").style.display = on ? "flex" : "none";
+    document.getElementById("search-btn").disabled = on;
+    if (!on) { clearInterval(window._iv); ["step-1","step-2","step-3"].forEach(id => document.getElementById(id).className = "step done"); }
+  }
+  function showResult(topic, md) {
+    const w = md.trim().split(/\s+/).length;
+    document.getElementById("result-topic").textContent = topic;
+    document.getElementById("result-wordcount").textContent = "~" + w + " Woerter";
+    document.getElementById("content").innerHTML = marked.parse(md);
+    document.getElementById("result-card").style.display = "block";
+    window._raw = md;
+  }
+  function hideResult() { document.getElementById("result-card").style.display = "none"; }
+  function showError(msg) { const el = document.getElementById("error-msg"); el.textContent = msg; el.style.display = "block"; }
+  function hideError() { document.getElementById("error-msg").style.display = "none"; }
+  async function copyText() {
+    await navigator.clipboard.writeText(window._raw || "");
+    const b = document.querySelector(".copy-btn");
+    b.textContent = "Kopiert!"; setTimeout(() => b.textContent = "Text kopieren", 2000);
+  }
+</script>
+</body>
+</html>
