@@ -70,7 +70,7 @@
 <script>
   const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:8000/run-agents"
-    : "https://DEIN-BACKEND-URL.onrender.com/run-agents";
+    : "https://ai-research-agent-x99i.onrender.com/run-agents";
   document.getElementById("topic-input").addEventListener("keydown", e => { if (e.key === "Enter") startResearch(); });
   async function startResearch() {
     const topic = document.getElementById("topic-input").value.trim();
