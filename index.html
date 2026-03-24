@@ -3,119 +3,167 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Research Agent</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <title>Moritz - Portfolio</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f0f13; color: #e2e2e8; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 60px 20px; }
-    header { text-align: center; margin-bottom: 48px; }
-    header h1 { font-size: 2.2rem; font-weight: 700; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
-    header p { color: #71717a; font-size: 1rem; }
-    .search-box { width: 100%; max-width: 680px; display: flex; gap: 12px; margin-bottom: 40px; }
-    .search-box input { flex: 1; padding: 14px 20px; border-radius: 12px; border: 1px solid #2e2e3a; background: #18181f; color: #e2e2e8; font-size: 1rem; outline: none; transition: border-color 0.2s; }
-    .search-box input:focus { border-color: #7c3aed; }
-    .search-box input::placeholder { color: #52525b; }
-    .search-box button { padding: 14px 28px; border-radius: 12px; border: none; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
-    .search-box button:hover { opacity: 0.88; }
-    .search-box button:disabled { opacity: 0.45; cursor: not-allowed; }
-    #status { display: none; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #2e2e3a; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.9s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .agent-steps { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-    .step { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; border: 1px solid #2e2e3a; background: #18181f; color: #52525b; transition: all 0.4s; }
-    .step.active { border-color: #7c3aed; color: #a78bfa; background: #1e1230; }
-    .step.done { border-color: #16a34a; color: #4ade80; background: #0c1a10; }
-    #result-card { display: none; width: 100%; max-width: 780px; background: #18181f; border: 1px solid #2e2e3a; border-radius: 16px; padding: 40px 48px; animation: fadeIn 0.5s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    #result-card .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid #2e2e3a; }
-    .topic-label { font-size: 0.8rem; color: #a78bfa; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-    .word-count { font-size: 0.78rem; color: #52525b; }
-    #content h1 { font-size: 1.6rem; font-weight: 700; color: #f4f4f8; margin-bottom: 16px; line-height: 1.3; }
-    #content h2 { font-size: 1.15rem; font-weight: 600; color: #c4b5fd; margin: 28px 0 10px; }
-    #content p { color: #b4b4be; line-height: 1.8; margin-bottom: 14px; font-size: 0.97rem; }
-    #content strong { color: #e2e2e8; }
-    #content ul, #content ol { color: #b4b4be; line-height: 1.8; padding-left: 20px; margin-bottom: 14px; font-size: 0.97rem; }
-    .copy-btn { margin-top: 28px; padding: 10px 22px; border-radius: 8px; border: 1px solid #2e2e3a; background: transparent; color: #71717a; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
-    .copy-btn:hover { border-color: #7c3aed; color: #a78bfa; }
-    #error-msg { display: none; color: #f87171; background: #1c0a0a; border: 1px solid #7f1d1d; border-radius: 10px; padding: 14px 20px; font-size: 0.9rem; max-width: 680px; width: 100%; text-align: center; }
+    :root {
+      --bg: #0a0a0f; --bg2: #13131a; --bg3: #1a1a24;
+      --accent: #7c3aed; --text: #e2e2e8; --muted: #71717a; --border: #2e2e3a;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(10,10,15,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; height: 60px; }
+    .nav-logo { font-weight: 700; font-size: 1.1rem; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 6rem 2rem 4rem; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%); pointer-events: none; }
+    .hero-content { max-width: 700px; position: relative; }
+    .hero-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(124,58,237,0.4); background: rgba(124,58,237,0.1); color: #a78bfa; font-size: 0.8rem; font-weight: 500; margin-bottom: 1.5rem; animation: fadeUp 0.6s ease both; }
+    .hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; animation: fadeUp 0.6s 0.1s ease both; }
+    .hero h1 span { background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { font-size: 1.15rem; color: var(--muted); margin-bottom: 2.5rem; animation: fadeUp 0.6s 0.2s ease both; }
+    .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; animation: fadeUp 0.6s 0.3s ease both; }
+    .btn-primary { padding: 12px 28px; border-radius: 10px; border: none; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: opacity 0.2s, transform 0.2s; }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-2px); }
+    .btn-secondary { padding: 12px 28px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: border-color 0.2s, transform 0.2s; }
+    .btn-secondary:hover { border-color: #7c3aed; transform: translateY(-2px); }
+    section { padding: 6rem 2rem; max-width: 1000px; margin: 0 auto; }
+    .section-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #a78bfa; margin-bottom: 0.75rem; }
+    .section-title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; margin-bottom: 1rem; }
+    .section-sub { color: var(--muted); font-size: 1rem; margin-bottom: 3rem; max-width: 500px; }
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+    .about-text p { color: var(--muted); margin-bottom: 1rem; }
+    .skills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+    .skill { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; border: 1px solid var(--border); background: var(--bg2); color: var(--muted); }
+    .about-stats { display: flex; flex-direction: column; gap: 1.5rem; }
+    .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; }
+    .stat-num { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-label { color: var(--muted); font-size: 0.9rem; }
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .project-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem; transition: border-color 0.2s, transform 0.2s; cursor: pointer; }
+    .project-card:hover { border-color: #7c3aed; transform: translateY(-4px); }
+    .project-icon { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(37,99,235,0.2)); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem; }
+    .project-card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .project-card p { color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem; }
+    .project-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tag { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; background: rgba(124,58,237,0.12); color: #a78bfa; border: 1px solid rgba(124,58,237,0.2); }
+    .contact-wrapper { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 3rem; max-width: 600px; margin: 0 auto; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .form-group input, .form-group textarea { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 0.95rem; outline: none; transition: border-color 0.2s; font-family: inherit; }
+    .form-group input:focus, .form-group textarea:focus { border-color: #7c3aed; }
+    .form-group textarea { resize: vertical; min-height: 120px; }
+    #form-status { margin-top: 1rem; font-size: 0.9rem; color: #4ade80; display: none; }
+    footer { text-align: center; padding: 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+    @media (max-width: 640px) { .about-grid { grid-template-columns: 1fr; } .nav-links { display: none; } .contact-wrapper { padding: 2rem 1.5rem; } }
   </style>
 </head>
 <body>
-<header>
-  <h1>AI Research Agent</h1>
-  <p>Gib ein Thema ein &ndash; 3 Agents recherchieren, schreiben und verbessern den Text.</p>
-</header>
-<div class="search-box">
-  <input type="text" id="topic-input" placeholder="z.B. Quantencomputer, Klimawandel, CRISPR ..." autofocus/>
-  <button id="search-btn" onclick="startResearch()">Recherchieren</button>
-</div>
-<div id="status">
-  <div class="spinner"></div>
-  <div class="agent-steps">
-    <div class="step" id="step-1">Researcher</div>
-    <div class="step" id="step-2">Writer</div>
-    <div class="step" id="step-3">Reviewer</div>
+<nav>
+  <div class="nav-logo">Moritz</div>
+  <ul class="nav-links">
+    <li><a href="#about">Ueber mich</a></li>
+    <li><a href="#projects">Projekte</a></li>
+    <li><a href="#contact">Kontakt</a></li>
+  </ul>
+</nav>
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">Verfuegbar fuer neue Projekte</div>
+    <h1>Hi, ich bin <span>Moritz</span></h1>
+    <p>Ich entwickle moderne Web-Applikationen und arbeite mit KI-Technologien um innovative Loesungen zu bauen.</p>
+    <div class="hero-btns">
+      <a href="#projects" class="btn-primary">Projekte ansehen</a>
+      <a href="#contact" class="btn-secondary">Kontakt aufnehmen</a>
+    </div>
   </div>
-  <p style="font-size:0.85rem;color:#52525b;" id="status-text">Agents werden gestartet...</p>
 </div>
-<div id="error-msg"></div>
-<div id="result-card">
-  <div class="meta">
-    <span class="topic-label" id="result-topic"></span>
-    <span class="word-count" id="result-wordcount"></span>
+<section id="about">
+  <div class="reveal">
+    <div class="section-label">Ueber mich</div>
+    <h2 class="section-title">Wer ich bin</h2>
+    <p class="section-sub">Entwickler mit Leidenschaft fuer moderne Technologien und KI.</p>
   </div>
-  <div id="content"></div>
-  <button class="copy-btn" onclick="copyText()">Text kopieren</button>
-</div>
+  <div class="about-grid reveal">
+    <div class="about-text">
+      <p>Ich bin Moritz - Entwickler und Tech-Enthusiast aus Muenchen. Ich beschaeftige mich intensiv mit Web-Entwicklung, KI-Integrationen und dem Aufbau moderner Applikationen.</p>
+      <p>Mein Fokus liegt auf sauberem Code, nutzerfreundlichem Design und dem Einsatz der neuesten Technologien - von Claude AI bis zu modernen Web-Frameworks.</p>
+      <div class="skills">
+        <span class="skill">Python</span><span class="skill">JavaScript</span><span class="skill">FastAPI</span>
+        <span class="skill">React</span><span class="skill">Claude AI</span><span class="skill">GitHub</span>
+        <span class="skill">CrewAI</span><span class="skill">VS Code</span>
+      </div>
+    </div>
+    <div class="about-stats">
+      <div class="stat-card"><div class="stat-num">3+</div><div class="stat-label">Projekte in Entwicklung</div></div>
+      <div class="stat-card"><div class="stat-num">AI</div><div class="stat-label">Fokus auf KI-Integration</div></div>
+      <div class="stat-card"><div class="stat-num">MCH</div><div class="stat-label">Standort Muenchen</div></div>
+    </div>
+  </div>
+</section>
+<section id="projects">
+  <div class="reveal">
+    <div class="section-label">Projekte</div>
+    <h2 class="section-title">Was ich gebaut habe</h2>
+    <p class="section-sub">Eine Auswahl aktueller Projekte und Experimente.</p>
+  </div>
+  <div class="projects-grid">
+    <div class="project-card reveal">
+      <div class="project-icon">&#129302;</div>
+      <h3>AI Research Agent</h3>
+      <p>Multi-Agent System mit CrewAI und Claude - recherchiert, schreibt und reviewt automatisch Berichte zu beliebigen Themen.</p>
+      <div class="project-tags"><span class="tag">Python</span><span class="tag">CrewAI</span><span class="tag">Claude AI</span></div>
+    </div>
+    <div class="project-card reveal">
+      <div class="project-icon">&#127760;</div>
+      <h3>Portfolio Website</h3>
+      <p>Diese Website - gebaut mit reinem HTML/CSS/JS, deployed auf GitHub Pages. Kein Framework, kein Build-Tool noetig.</p>
+      <div class="project-tags"><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">GitHub Pages</span></div>
+    </div>
+    <div class="project-card reveal">
+      <div class="project-icon">&#9889;</div>
+      <h3>Naechstes Projekt</h3>
+      <p>In Planung - stay tuned fuer weitere KI-gestuetzte Applikationen und Web-Tools.</p>
+      <div class="project-tags"><span class="tag">Coming soon</span></div>
+    </div>
+  </div>
+</section>
+<section id="contact">
+  <div class="reveal" style="text-align:center; margin-bottom:2rem;">
+    <div class="section-label">Kontakt</div>
+    <h2 class="section-title">Lass uns reden</h2>
+    <p class="section-sub" style="margin:0 auto;">Interesse an einer Zusammenarbeit? Schreib mir!</p>
+  </div>
+  <div class="contact-wrapper reveal">
+    <div class="form-group"><label>Name</label><input type="text" id="name" placeholder="Dein Name"/></div>
+    <div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.com"/></div>
+    <div class="form-group"><label>Nachricht</label><textarea id="message" placeholder="Worum geht es?"></textarea></div>
+    <a href="#" class="btn-primary" onclick="sendMail(); return false;" style="display:inline-block;">Nachricht senden</a>
+    <div id="form-status">Nachricht wurde vorbereitet - dein E-Mail-Programm oeffnet sich!</div>
+  </div>
+</section>
+<footer>
+  <p>2026 Moritz - Gebaut mit Claude AI - <a href="https://github.com/moritz-sketch" style="color:#a78bfa;text-decoration:none;">GitHub</a></p>
+</footer>
 <script>
-  const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:8000/run-agents"
-    : "https://ai-research-agent-x99i.onrender.com/run-agents";
-  document.getElementById("topic-input").addEventListener("keydown", e => { if (e.key === "Enter") startResearch(); });
-  async function startResearch() {
-    const topic = document.getElementById("topic-input").value.trim();
-    if (!topic) { showError("Bitte gib ein Thema ein."); return; }
-    setLoading(true); hideError(); hideResult(); animateSteps();
-    try {
-      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic }) });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || "Fehler"); }
-      const data = await res.json();
-      showResult(data.topic, data.result);
-    } catch(e) { showError("Fehler: " + e.message); }
-    finally { setLoading(false); }
-  }
-  function animateSteps() {
-    const steps = ["step-1","step-2","step-3"];
-    const labels = ["Researcher recherchiert...","Writer schreibt...","Reviewer prueft..."];
-    steps.forEach(id => document.getElementById(id).className = "step");
-    let i = 0;
-    const iv = setInterval(() => {
-      if (i > 0) document.getElementById(steps[i-1]).className = "step done";
-      if (i < steps.length) { document.getElementById(steps[i]).className = "step active"; document.getElementById("status-text").textContent = labels[i]; i++; }
-      else clearInterval(iv);
-    }, 5000);
-    window._iv = iv;
-  }
-  function setLoading(on) {
-    document.getElementById("status").style.display = on ? "flex" : "none";
-    document.getElementById("search-btn").disabled = on;
-    if (!on) { clearInterval(window._iv); ["step-1","step-2","step-3"].forEach(id => document.getElementById(id).className = "step done"); }
-  }
-  function showResult(topic, md) {
-    const w = md.trim().split(/\s+/).length;
-    document.getElementById("result-topic").textContent = topic;
-    document.getElementById("result-wordcount").textContent = "~" + w + " Woerter";
-    document.getElementById("content").innerHTML = marked.parse(md);
-    document.getElementById("result-card").style.display = "block";
-    window._raw = md;
-  }
-  function hideResult() { document.getElementById("result-card").style.display = "none"; }
-  function showError(msg) { const el = document.getElementById("error-msg"); el.textContent = msg; el.style.display = "block"; }
-  function hideError() { document.getElementById("error-msg").style.display = "none"; }
-  async function copyText() {
-    await navigator.clipboard.writeText(window._raw || "");
-    const b = document.querySelector(".copy-btn");
-    b.textContent = "Kopiert!"; setTimeout(() => b.textContent = "Text kopieren", 2000);
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  function sendMail() {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const message = document.getElementById('message').value.trim();
+    if (!name || !message) { alert('Bitte Name und Nachricht ausfullen.'); return; }
+    const subject = encodeURIComponent('Portfolio-Kontakt von ' + name);
+    const body = encodeURIComponent('Name: ' + name + '\nE-Mail: ' + email + '\n\nNachricht:\n' + message);
+    window.location.href = 'mailto:moritz@example.com?subject=' + subject + '&body=' + body;
+    document.getElementById('form-status').style.display = 'block';
   }
 </script>
 </body>
