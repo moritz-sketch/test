@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import chromadb
-import anthropic
+import requests
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_cloudflare_header(request, call_next):
+async def add_cors_header(request, call_next):
     response = await call_next(request)
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "*"
@@ -30,7 +30,8 @@ async def add_cloudflare_header(request, call_next):
 memory = chromadb.PersistentClient(path="./memory")
 collection = memory.get_or_create_collection("agent_memory")
 
-claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "llama3.2"
 
 class ChatRequest(BaseModel):
     message: str
@@ -58,19 +59,28 @@ def save_to_memory(content: str, category: str, tags: list[str] = []):
     return doc_id
 
 def extract_and_save_knowledge(user_msg: str, assistant_response: str):
-    keywords = ["github", "render", "website", "deploy", "error", "fix", "trick",
+    keywords = ["github", "render", "website", "deploy", "error", "fix",
                 "url", "api", "button", "setting", "install", "command"]
     combined = (user_msg + " " + assistant_response).lower()
     if any(kw in combined for kw in keywords):
         content = f"Frage: {user_msg[:200]}\nAntwort: {assistant_response[:500]}"
         save_to_memory(content, "auto_learned", ["auto"])
 
+def ask_ollama(prompt: str, system: str = "") -> str:
+    full_prompt = f"{system}\n\nNutzer: {prompt}\nAssistent:" if system else prompt
+    response = requests.post(OLLAMA_URL, json={
+        "model": OLLAMA_MODEL,
+        "prompt": full_prompt,
+        "stream": False
+    }, timeout=120)
+    return response.json().get("response", "Keine Antwort erhalten.")
+
 @app.post("/chat")
 def chat(req: ChatRequest):
     memories = search_memory(req.message)
     memory_context = ""
     if memories:
-        memory_context = "\n\nRelevante Erinnerungen:\n"
+        memory_context = "Relevante Erinnerungen:\n"
         for i, m in enumerate(memories, 1):
             memory_context += f"{i}. {m[:300]}\n"
 
@@ -79,13 +89,7 @@ Du hilfst bei Web-Entwicklung, KI-Projekten und technischen Aufgaben.
 Du antwortest auf Deutsch und bist direkt und hilfreich.
 {memory_context}"""
 
-    response = claude.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": req.message}]
-    )
-    answer = response.content[0].text
+    answer = ask_ollama(req.message, system_prompt)
 
     if req.save_memory:
         extract_and_save_knowledge(req.message, answer)
@@ -123,6 +127,7 @@ def delete_memory(doc_id: str):
 
 @app.get("/")
 def root():
-    return {"status": "Agent laeuft",
+    return {"status": "Agent laeuft (Ollama)",
+            "model": OLLAMA_MODEL,
             "memories": collection.count(),
             "endpoints": ["/chat", "/memory/add", "/memory/search", "/memory/all"]}
