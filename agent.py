@@ -10,7 +10,22 @@ from datetime import datetime
 load_dotenv()
 
 app = FastAPI(title="Lokaler AI Agent mit Gedaechtnis")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+    expose_headers=["*"]
+)
+
+@app.middleware("http")
+async def add_cloudflare_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 memory = chromadb.PersistentClient(path="./memory")
 collection = memory.get_or_create_collection("agent_memory")
