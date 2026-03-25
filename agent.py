@@ -30,7 +30,7 @@ async def add_cloudflare_header(request, call_next):
 memory = chromadb.PersistentClient(path="./memory")
 collection = memory.get_or_create_collection("agent_memory")
 
-claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+claude = anthropic.Anthropic(api_key=os.getenv("_my-key5"))
 
 class ChatRequest(BaseModel):
     message: str
