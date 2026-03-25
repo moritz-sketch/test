@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Einstellungen - Moritz Portfolio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #0a0a0f; --bg2: #13131a; --bg3: #1a1a24; --text: #e2e2e8; --muted: #71717a; --border: #2e2e3a; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem; }
+    .back { color: #a78bfa; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.4rem; margin-bottom: 2rem; }
+    .back:hover { opacity: 0.8; }
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; max-width: 860px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; }
+    .card h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .form-group input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 0.92rem; outline: none; transition: border-color 0.2s; }
+    .form-group input:focus { border-color: #7c3aed; }
+    .btn { padding: 10px 22px; border-radius: 10px; border: none; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.88; }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .msg { margin-top: 1rem; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; display: none; }
+    .msg.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+    .msg.success { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; }
+    .qr-container { text-align: center; margin: 1rem 0; }
+    .qr-container img { border-radius: 10px; border: 4px solid white; width: 180px; }
+    .badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .badge.on { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .badge.off { background: rgba(113,113,122,0.1); color: var(--muted); border: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back">&#8592; Zurueck zum Dashboard</a>
+  <h1>&#9881;&#65039; Einstellungen</h1>
+  <p class="subtitle" id="welcome-text">Konto-Einstellungen</p>
+  <div class="grid">
+    <div class="card">
+      <h2>&#128273; Passwort aendern</h2>
+      <p>Waehle ein sicheres Passwort mit mindestens 8 Zeichen.</p>
+      <div class="form-group"><label>Aktuelles Passwort</label><input type="password" id="old-pw" placeholder="••••••••"/></div>
+      <div class="form-group"><label>Neues Passwort</label><input type="password" id="new-pw" placeholder="••••••••"/></div>
+      <div class="form-group"><label>Neues Passwort bestaetigen</label><input type="password" id="new-pw2" placeholder="••••••••"/></div>
+      <button class="btn" onclick="changePassword()">Passwort aendern</button>
+      <div class="msg" id="msg-pw"></div>
+    </div>
+    <div class="card">
+      <h2>&#128272; Zwei-Faktor-Authentifizierung</h2>
+      <p>Schuetze dein Konto mit Google Authenticator.</p>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.5rem;">
+        <span>Status:</span>
+        <span class="badge off" id="2fa-badge">Inaktiv</span>
+      </div>
+      <div id="2fa-setup" style="display:none;">
+        <p style="margin-bottom:1rem; color:var(--muted); font-size:0.85rem;">Scanne den QR-Code mit der Google Authenticator App:</p>
+        <div class="qr-container"><img id="qr-img" src="" alt="QR Code"/></div>
+        <p style="font-size:0.78rem; color:var(--muted); text-align:center; margin-bottom:1rem;">Oder manuell: <code id="totp-secret" style="color:#a78bfa;"></code></p>
+        <div class="form-group"><label>Bestaetigungscode aus der App</label><input type="text" id="verify-code" placeholder="000000" maxlength="6" inputmode="numeric"/></div>
+        <button class="btn" onclick="verify2fa()">2FA aktivieren</button>
+      </div>
+      <div id="2fa-actions">
+        <button class="btn" id="btn-2fa-toggle" onclick="toggle2fa()">2FA einrichten</button>
+      </div>
+      <div class="msg" id="msg-2fa"></div>
+    </div>
+    <div class="card">
+      <h2>&#128682; Sitzung</h2>
+      <p>Du bist eingeloggt als <strong id="current-user">-</strong>.</p>
+      <button class="btn btn-danger" onclick="logout()">Ausloggen</button>
+    </div>
+  </div>
+<script>
+  const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://DEIN-TUNNEL-URL.trycloudflare.com';
+  const token = localStorage.getItem('token');
+  if (!token) window.location.href = 'login.html';
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+  async function loadUser() {
+    try {
+      const res = await fetch(API+'/me', { headers });
+      if (!res.ok) { logout(); return; }
+      const data = await res.json();
+      document.getElementById('current-user').textContent = data.username;
+      document.getElementById('welcome-text').textContent = 'Eingeloggt als ' + data.username;
+      if (data['2fa_active']) {
+        document.getElementById('2fa-badge').textContent = 'Aktiv';
+        document.getElementById('2fa-badge').className = 'badge on';
+        document.getElementById('btn-2fa-toggle').textContent = '2FA deaktivieren';
+        document.getElementById('btn-2fa-toggle').className = 'btn btn-danger';
+      }
+    } catch(e) { logout(); }
+  }
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = 'msg '+type; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 4000);
+  }
+  async function changePassword() {
+    const old_pw=document.getElementById('old-pw').value;
+    const new_pw=document.getElementById('new-pw').value;
+    const new_pw2=document.getElementById('new-pw2').value;
+    if (!old_pw||!new_pw) return showMsg('msg-pw','Bitte alle Felder ausfullen.','error');
+    if (new_pw!==new_pw2) return showMsg('msg-pw','Neue Passwoerter stimmen nicht ueberein.','error');
+    if (new_pw.length<8) return showMsg('msg-pw','Mindestens 8 Zeichen.','error');
+    const res = await fetch(API+'/change-password', { method:'POST', headers, body: JSON.stringify({old_password:old_pw, new_password:new_pw}) });
+    const data = await res.json();
+    showMsg('msg-pw', data.message||data.detail, res.ok?'success':'error');
+    if (res.ok) { ['old-pw','new-pw','new-pw2'].forEach(id => document.getElementById(id).value=''); }
+  }
+  async function toggle2fa() {
+    const badge = document.getElementById('2fa-badge');
+    if (badge.classList.contains('on')) {
+      const res = await fetch(API+'/2fa/disable', { method:'POST', headers });
+      const data = await res.json();
+      showMsg('msg-2fa', data.message, 'success');
+      badge.textContent='Inaktiv'; badge.className='badge off';
+      document.getElementById('btn-2fa-toggle').textContent='2FA einrichten';
+      document.getElementById('btn-2fa-toggle').className='btn';
+    } else {
+      const res = await fetch(API+'/2fa/setup', { headers });
+      const data = await res.json();
+      document.getElementById('qr-img').src = data.qr_code;
+      document.getElementById('totp-secret').textContent = data.secret;
+      document.getElementById('2fa-setup').style.display='block';
+      document.getElementById('2fa-actions').style.display='none';
+    }
+  }
+  async function verify2fa() {
+    const code = document.getElementById('verify-code').value.trim();
+    if (code.length!==6) return showMsg('msg-2fa','6-stelligen Code eingeben.','error');
+    const res = await fetch(API+'/2fa/verify', { method:'POST', headers, body: JSON.stringify({totp_code:code}) });
+    const data = await res.json();
+    if (res.ok) {
+      showMsg('msg-2fa','2FA erfolgreich aktiviert!','success');
+      document.getElementById('2fa-setup').style.display='none';
+      document.getElementById('2fa-actions').style.display='block';
+      document.getElementById('2fa-badge').textContent='Aktiv';
+      document.getElementById('2fa-badge').className='badge on';
+      document.getElementById('btn-2fa-toggle').textContent='2FA deaktivieren';
+      document.getElementById('btn-2fa-toggle').className='btn btn-danger';
+    } else { showMsg('msg-2fa', data.detail, 'error'); }
+  }
+  function logout() { localStorage.removeItem('token'); localStorage.removeItem('username'); window.location.href='login.html'; }
+  loadUser();
+</script>
+</body>
+</html>
