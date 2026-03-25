@@ -63,6 +63,17 @@
     .tv-tab { padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg2); color: var(--muted); font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
     .tv-tab.active { border-color: #7c3aed; color: #a78bfa; background: rgba(124,58,237,0.1); }
     .tv-widget { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+    
+    .chat-wrapper { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; max-width: 700px; margin: 0 auto; }
+    .chat-messages { height: 350px; overflow-y: auto; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .chat-msg { padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; max-width: 85%; }
+    .chat-msg.user { background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(37,99,235,0.2)); border: 1px solid rgba(124,58,237,0.3); align-self: flex-end; color: var(--text); }
+    .chat-msg.agent { background: var(--bg3); border: 1px solid var(--border); align-self: flex-start; color: var(--text); }
+    .chat-msg.system { color: var(--muted); font-size: 0.8rem; align-self: center; font-style: italic; }
+    .chat-input-row { display: flex; gap: 0.75rem; }
+    .chat-input-row input { flex: 1; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.2s; font-family: inherit; }
+    .chat-input-row input:focus { border-color: #7c3aed; }
+    .chat-memory { margin-top: 1rem; font-size: 0.75rem; color: var(--muted); text-align: center; }
     .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
     .reveal.visible { opacity: 1; transform: none; }
     @media (max-width: 640px) { .about-grid { grid-template-columns: 1fr; } .nav-links { display: none; } .contact-wrapper { padding: 2rem 1.5rem; } }
@@ -74,7 +85,7 @@
   <ul class="nav-links">
     <li><a href="#about">Ueber mich</a></li>
     <li><a href="#projects">Projekte</a></li>
-    <li><a href="#markets">Maerkte</a></li><li><a href="#contact">Kontakt</a></li>
+    <li><a href="#markets">Maerkte</a></li><li><a href="#agent">Agent</a></li><li><a href="#contact">Kontakt</a></li>
   </ul>
 </nav>
 <div class="hero">
@@ -234,6 +245,24 @@
     </div>
   </div>
 </section>
+
+<section id="agent">
+  <div class="reveal" style="text-align:center; margin-bottom:2rem;">
+    <div class="section-label">AI Agent</div>
+    <h2 class="section-title">Sprich mit meinem Agent</h2>
+    <p class="section-sub" style="margin:0 auto;">Mein persoenlicher KI-Assistent laeuft lokal auf meinem Laptop und merkt sich alles.</p>
+  </div>
+  <div class="chat-wrapper reveal">
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg system">Agent ist verbunden. Stell mir eine Frage!</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Stell eine Frage..." onkeydown="if(event.key==='Enter') sendChat()"/>
+      <button class="btn-primary" onclick="sendChat()">Senden</button>
+    </div>
+    <div class="chat-memory" id="chat-memory"></div>
+  </div>
+</section>
 <section id="contact">
   <div class="reveal" style="text-align:center; margin-bottom:2rem;">
     <div class="section-label">Kontakt</div>
@@ -264,6 +293,39 @@
     document.querySelectorAll('.tv-tab').forEach((btn, i) => {
       btn.classList.toggle('active', ['chart','overview','ticker'][i] === name);
     });
+  }
+  
+  const AGENT_URL = 'https://monte-alpha-generator-names.trycloudflare.com';
+
+  async function sendChat() {
+    const input = document.getElementById('chat-input');
+    const messages = document.getElementById('chat-messages');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+
+    // User Nachricht
+    messages.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
+    messages.innerHTML += '<div class="chat-msg system" id="typing">Agent tippt...</div>';
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const res = await fetch(AGENT_URL + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, save_memory: true })
+      });
+      const data = await res.json();
+      document.getElementById('typing')?.remove();
+      messages.innerHTML += '<div class="chat-msg agent">' + data.answer + '</div>';
+      if (data.memories_used > 0) {
+        document.getElementById('chat-memory').textContent = data.memories_used + ' Erinnerungen genutzt';
+      }
+    } catch(e) {
+      document.getElementById('typing')?.remove();
+      messages.innerHTML += '<div class="chat-msg system">Agent nicht erreichbar. Laeuft der Tunnel?</div>';
+    }
+    messages.scrollTop = messages.scrollHeight;
   }
   function sendMail() {
     const name = document.getElementById('name').value.trim();
